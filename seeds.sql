@@ -25,3 +25,7 @@ CREATE TABLE roles (
   department_id INT NOT NULL,
   PRIMARY KEY (id)
 );
+
+SELECT * FROM employees;
+SELECT * FROM departments;
+SELECT * FROM roles;
