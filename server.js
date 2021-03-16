@@ -111,6 +111,38 @@ const viewAllRoles = () => {
     });
 };
 
+// addEmployee function
+// ???????????????????????????????????????????????????????????
+const addEmployee = () => {
+    inquirer
+        .prompt(
+        {
+            name: 'first_name',
+            type: 'input',
+            message: `What is the employee's first name?`,
+        },
+
+        {
+            name: 'last_name',
+            type: 'input',
+            message: `What is the employee's last name?`,
+        },
+
+        )
+        .then((answer) => {
+            let query = 'INSERT INTO employees (first_name, last_name)';
+            query += `VALUES (${answer.first_name}, ${answer.last_name})`
+            connection.query(query, (err, res) => {
+                res.forEach(({ first_name, last_name }, i) => {
+                    const num = i + 1;
+                    console.log(
+                    `${num} || Title: ${title} || Salary: ${salary} || Department ID: ${department_id}`
+                    );
+                });
+            });
+        });
+};
+
 sequelize.sync({ force: true }).then(() => {
     app.listen(PORT, () => console.log('Now listening'));
     start();
