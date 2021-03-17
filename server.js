@@ -1,3 +1,8 @@
+// TO-DO:
+    // --addEmployee() function
+    // --updateEmployeeRole() function
+    // --Record video
+
 // DEPENDENCIES
 const mysql = require('mysql');
 const inquirer = require('inquirer');
@@ -59,7 +64,7 @@ const start = () => {
 const viewAllEmployees = () => {
     let query = 'SELECT * FROM employees';
     connection.query(query, (err, res) => {
-        console.log(`${res.length} departments found!`);
+        console.log(`${res.length} employees found!`);
         res.forEach(({ first_name, last_name, role_id, manager_id }, i) => {
             const num = i + 1;
             console.log(
@@ -142,13 +147,31 @@ const addRole = () => {
                 });
             });
         });
-}
+};
 
 // addEmployee function
 const addEmployee = () => {
-    connection.query('SELECT * FROM departments', (err, res) => {
-        inquirer
+    let query = 'SELECT * FROM employees';
+    connection.query(query, (err, mgr) => {
+        connection.query('SELECT * FROM roles', (err, roles) => {
+            console.log(roles);
+            inquirer
             .prompt(
+
+            {
+                name: 'role',
+                type: 'list',
+                message: `What is the employee's role?`,
+                choices: roles,
+            },
+
+            {
+                name: 'manager',
+                type: 'list',
+                message: `Who is the employee's manager?`,
+                choices: mgr,
+            },
+
             {
                 name: 'first_name',
                 type: 'input',
@@ -160,37 +183,56 @@ const addEmployee = () => {
                 type: 'input',
                 message: `What is the employee's last name?`,
             },
-
-            {
-                name: 'role',
-                type: 'list',
-                message: `What is the employee's role?`,
-                // ???
-                choices: res,
-            },
-
-            {
-                name: 'manager',
-                type: 'list',
-                message: `Who is the employee's manager?`,
-                // ???
-                choices: res,
-            },
-
+            
             )
             .then((answer) => {
-                let query = 'INSERT INTO employees (first_name, last_name)';
-                query += `VALUES (${answer.first_name}, ${answer.last_name})`
-                connection.query(query, (err, res) => {
-                    res.forEach(({ first_name, last_name }, i) => {
-                        const num = i + 1;
-                        console.log(
-                        `${num} || Title: ${title} || Salary: ${salary} || Department ID: ${department_id}`
-                        );
-                    });
+                const rolesIndex = roles.filter((roles) => {
+                    return roles.title === answer.role;
+                });
+
+                console.log(rolesIndex);
+
+                const roleId = rolesIndex[0].id;
+
+                const mgrIndex = mgr.filter((mgrs) => {
+                    return mgrs.title === answer.manager;
+                });
+
+                const mgrId = mgrIndex[0].id;
+
+                const query = 'INSERT INTO employees SET ?';
+
+                const empInfo = {first_name: answer.first_name, last_name: answer.last_name, role_id: roleId, manager_id: mgrId};
+
+                connection.query(query, empInfo, (err, res) => {
+                    console.log(`${answer.first_name} ${answer.last_name} has been added!`);
+                    start();
                 });
             });
+        });
     });
+};
+
+// addDepartment function
+const addDepartment = () => {
+    inquirer
+        .prompt([
+            {
+                name: 'name',
+                type: 'input',
+                message: `What is the name of the department?`,
+            },
+        ])
+        .then((answer) => {
+            const query = 'INSERT INTO departments SET ?';
+
+            const deptInfo = {name: answer.name};
+
+            connection.query(query, deptInfo, (err, res) => {
+                console.log(`Department: ${answer.name} has been created!`);
+                start();
+            });
+        });
 };
 
 connection.connect((err) => {
