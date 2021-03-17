@@ -1,33 +1,16 @@
 // DEPENDENCIES
 const mysql = require('mysql');
 const inquirer = require('inquirer');
-const express = require('express');
-const routes = require('./routes');
 
 // IMPORTING CONNECTION OBJECT
-const sequelize = require('./config/connection');
-
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// turn on routes
-app.use(routes);
-
-// MODELS
-const Employee = require('./models/Employee');
-const Department = require('./models/Department');
-const Role = require('./models/Role');
-const { ConnectionError } = require('sequelize/types');
+const connection = require('./config/connection');
 
 // PROMPTING FUNCTION
 const start = () => {
     inquirer
         .prompt({
             name: 'action',
-            type: 'rawlist',
+            type: 'list',
             message: 'What would you like to do?',
             choices: [
               'View all employees',
@@ -74,12 +57,13 @@ const viewAllEmployees = () => {
     let query = 'SELECT * FROM employees';
     connection.query(query, (err, res) => {
         console.log(`${res.length} matches found!`);
-        res.forEach(({ first_name, role_id, manager_id }, i) => {
+        res.forEach(({ first_name, last_name, role_id, manager_id }, i) => {
             const num = i + 1;
             console.log(
               `${num} || ${first_name} ${last_name} || Role ID: ${role_id} || Manager ID: ${manager_id}`
             );
         });
+        start();
     });
 };
 
@@ -94,6 +78,7 @@ const viewAllDepartments = () => {
               `${num} || ${name}`
             );
         });
+        start();
     });
 };
 
@@ -108,8 +93,52 @@ const viewAllRoles = () => {
               `${num} || Title: ${title} || Salary: ${salary} || Department ID: ${department_id}`
             );
         });
+        start();
     });
 };
+
+// addRole function
+const addRole = () => {
+    connection.query('SELECT * FROM departments', (err, res) => {
+        inquirer
+            .prompt([
+                {
+                    name: 'title',
+                    type: 'input',
+                    message: `What is the name of the role?`,
+                },
+                
+                // Add validation for number input
+                {
+                    name: 'salary',
+                    type: 'input',
+                    message: `What is the salary for this position?`,
+                },
+
+                {
+                    name: 'department',
+                    type: 'list',
+                    message: 'To which department does this role belong?',
+                    choices: res,
+                }
+            ])
+            .then((answer) => {
+                const deptIndex = res.filter((dept) => {
+                    return dept.name === answer.department;
+                });
+
+                const deptId = deptIndex[0].id;
+
+                let query = 'INSERT INTO roles (title, salary, department_id)';
+                query += `VALUES (${answer.title}, ${answer.salary}, ${deptId})`
+                connection.query(query, (err, res) => {
+                    console.log(
+                    `Role: ${answer.title} has been created!`
+                    );
+                });
+            });
+        });
+}
 
 // addEmployee function
 // ???????????????????????????????????????????????????????????
@@ -143,7 +172,7 @@ const addEmployee = () => {
         });
 };
 
-sequelize.sync({ force: true }).then(() => {
-    app.listen(PORT, () => console.log('Now listening'));
+connection.connect((err) => {
+    if (err) throw err;
     start();
 });
