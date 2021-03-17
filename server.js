@@ -146,49 +146,51 @@ const addRole = () => {
 
 // addEmployee function
 const addEmployee = () => {
-    inquirer
-        .prompt(
-        {
-            name: 'first_name',
-            type: 'input',
-            message: `What is the employee's first name?`,
-        },
+    connection.query('SELECT * FROM departments', (err, res) => {
+        inquirer
+            .prompt(
+            {
+                name: 'first_name',
+                type: 'input',
+                message: `What is the employee's first name?`,
+            },
 
-        {
-            name: 'last_name',
-            type: 'input',
-            message: `What is the employee's last name?`,
-        },
+            {
+                name: 'last_name',
+                type: 'input',
+                message: `What is the employee's last name?`,
+            },
 
-        {
-            name: 'role',
-            type: 'list',
-            message: `What is the employee's role?`,
-            // ???
-            choices: res,
-        },
+            {
+                name: 'role',
+                type: 'list',
+                message: `What is the employee's role?`,
+                // ???
+                choices: res,
+            },
 
-        {
-            name: 'manager',
-            type: 'list',
-            message: `Who is the employee's manager?`,
-            // ???
-            choices: res,
-        },
+            {
+                name: 'manager',
+                type: 'list',
+                message: `Who is the employee's manager?`,
+                // ???
+                choices: res,
+            },
 
-        )
-        .then((answer) => {
-            let query = 'INSERT INTO employees (first_name, last_name)';
-            query += `VALUES (${answer.first_name}, ${answer.last_name})`
-            connection.query(query, (err, res) => {
-                res.forEach(({ first_name, last_name }, i) => {
-                    const num = i + 1;
-                    console.log(
-                    `${num} || Title: ${title} || Salary: ${salary} || Department ID: ${department_id}`
-                    );
+            )
+            .then((answer) => {
+                let query = 'INSERT INTO employees (first_name, last_name)';
+                query += `VALUES (${answer.first_name}, ${answer.last_name})`
+                connection.query(query, (err, res) => {
+                    res.forEach(({ first_name, last_name }, i) => {
+                        const num = i + 1;
+                        console.log(
+                        `${num} || Title: ${title} || Salary: ${salary} || Department ID: ${department_id}`
+                        );
+                    });
                 });
             });
-        });
+    });
 };
 
 connection.connect((err) => {
