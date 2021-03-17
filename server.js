@@ -20,6 +20,7 @@ const start = () => {
               'Add a department',
               'Add a role',
               'Update employee role',
+              'Exit',
             ],
         })
         .then((answer) => {
@@ -45,6 +46,8 @@ const start = () => {
                 case 'Update employee role':
                     updateEmployeeRole();
                     break;
+                case 'Exit':
+                    process.exit();
                 default:
                     console.log(`Invalid action: ${answer.action}`);
                     break;
@@ -56,7 +59,7 @@ const start = () => {
 const viewAllEmployees = () => {
     let query = 'SELECT * FROM employees';
     connection.query(query, (err, res) => {
-        console.log(`${res.length} matches found!`);
+        console.log(`${res.length} departments found!`);
         res.forEach(({ first_name, last_name, role_id, manager_id }, i) => {
             const num = i + 1;
             console.log(
@@ -86,7 +89,7 @@ const viewAllDepartments = () => {
 const viewAllRoles = () => {
     let query = 'SELECT * FROM roles';
     connection.query(query, (err, res) => {
-        console.log(`${res.length} matches found!`);
+        console.log(`${res.length} roles found!`);
         res.forEach(({ title, salary, department_id }, i) => {
             const num = i + 1;
             console.log(
@@ -129,19 +132,19 @@ const addRole = () => {
 
                 const deptId = deptIndex[0].id;
 
-                let query = 'INSERT INTO roles (title, salary, department_id)';
-                query += `VALUES (${answer.title}, ${answer.salary}, ${deptId})`
-                connection.query(query, (err, res) => {
-                    console.log(
-                    `Role: ${answer.title} has been created!`
-                    );
+                const query = 'INSERT INTO roles SET ?';
+
+                const roleInfo = {title: answer.title, salary: answer.salary, department_id: deptId};
+
+                connection.query(query, roleInfo, (err, res) => {
+                    console.log(`Role: ${answer.title} has been created!`);
+                    start();
                 });
             });
         });
 }
 
 // addEmployee function
-// ???????????????????????????????????????????????????????????
 const addEmployee = () => {
     inquirer
         .prompt(
@@ -155,6 +158,22 @@ const addEmployee = () => {
             name: 'last_name',
             type: 'input',
             message: `What is the employee's last name?`,
+        },
+
+        {
+            name: 'role',
+            type: 'list',
+            message: `What is the employee's role?`,
+            // ???
+            choices: res,
+        },
+
+        {
+            name: 'manager',
+            type: 'list',
+            message: `Who is the employee's manager?`,
+            // ???
+            choices: res,
         },
 
         )

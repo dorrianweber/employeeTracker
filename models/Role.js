@@ -11,6 +11,9 @@ Role.init(
         primaryKey: true,
         autoIncrement: true
       },
+      title: {
+        type: DataTypes.STRING
+      },
       salary: {
         type: DataTypes.DECIMAL
       },
