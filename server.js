@@ -1,7 +1,3 @@
-// TO-DO:
-    // --addEmployee() input validation
-    // --Record video
-
 // DEPENDENCIES
 const mysql = require('mysql');
 const inquirer = require('inquirer');
