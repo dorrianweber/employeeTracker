@@ -1,6 +1,5 @@
 // TO-DO:
     // --addEmployee() input validation
-    // --updateEmployeeRole() function
     // --Record video
 
 // DEPENDENCIES
@@ -152,12 +151,10 @@ const addRole = () => {
 
 // addEmployee function
 const addEmployee = () => {
-    let query = 'SELECT id, first_name AS name FROM employees';
-    connection.query(query, (err, mgrs) => {
+    connection.query('SELECT id, first_name AS name FROM employees', (err, mgrs) => {
         connection.query('SELECT id, title AS name FROM roles', (err, roles) => {
             inquirer
             .prompt([
-
             {
                 name: 'first_name',
                 type: 'input',
@@ -183,14 +180,11 @@ const addEmployee = () => {
                 message: `Who is the employee's manager?`,
                 choices: mgrs,
             },
-
         ])
             .then((answer) => {
                 const rolesIndex = roles.filter((role) => {
                     return role.name === answer.role;
                 });
-
-                console.log(rolesIndex);
 
                 const roleId = rolesIndex[0].id;
 
@@ -199,8 +193,6 @@ const addEmployee = () => {
                 });
 
                 const mgrId = mgrIndex[0].id;
-
-                console.log(mgrIndex);
 
                 const query = 'INSERT INTO employees SET ?';
 
@@ -237,7 +229,56 @@ const addDepartment = () => {
         });
 };
 
+// updateEmployeeRole function
+const updateEmployeeRole = () => {
+    connection.query('SELECT id, first_name AS name FROM employees', (err, emps) => {
+        connection.query('SELECT id, title AS name FROM roles', (err, roles) => {    
+            inquirer
+                .prompt([
+                    {
+                        name: 'employee',
+                        type: 'list',
+                        message: `Which employee's role would you like to update?`,
+                        choices: emps,
+                    },
 
+                    {
+                        name: 'role',
+                        type: 'list',
+                        message: `What is this employee's new role?`,
+                        choices: roles,
+                    },
+                ])
+                .then((answer) => {
+                    // Employee info
+                    const empIndex = emps.filter((emp) => {
+                        return emp.name === answer.employee;
+                    });
+    
+                    const empChoice = empIndex[0].name;
+                    
+                    // Roles info
+                    const rolesIndex = roles.filter((role) => {
+                        return role.name === answer.role;
+                    });
+    
+                    const roleChoice = rolesIndex[0].id;
+    
+                    connection.query('UPDATE employees SET ? WHERE ?',
+                    [
+                        {
+                            role_id: roleChoice,
+                        },
+                        {
+                            first_name: empChoice,
+                        }
+                    ], (err, res) => {
+                        if (err) throw err;
+                        console.log(`${answer.employee}'s role has been updated!`);
+                        start();
+                    });
+                });
+    })})};
 
 connection.connect((err) => {
     if (err) throw err;
