@@ -18,12 +18,14 @@ const start = () => {
             message: 'What would you like to do?',
             choices: [
               'View all employees',
+              'View employees by manager',
               'View all departments',
               'View all roles',
               'Add an employee',
               'Add a department',
               'Add a role',
               'Update employee role',
+              'Update employee manager',
               'Exit',
             ],
         })
@@ -31,6 +33,9 @@ const start = () => {
             switch (answer.action) {
                 case 'View all employees':
                     viewAllEmployees();
+                    break;
+                case 'View employees by manager':
+                    viewEmpsByMgr();
                     break;
                 case 'View all departments':
                     viewAllDepartments();
@@ -50,6 +55,9 @@ const start = () => {
                 case 'Update employee role':
                     updateEmployeeRole();
                     break;
+                case 'Update employee manager':
+                    updateEmployeeMgr();
+                    break;
                 case 'Exit':
                     process.exit();
                 default:
@@ -61,7 +69,7 @@ const start = () => {
 
 // viewAllEmployees function
 const viewAllEmployees = () => {
-    let query = 'SELECT * FROM employees';
+    const query = 'SELECT * FROM employees';
     connection.query(query, (err, res) => {
         console.log(`${res.length} employees found!`);
         res.forEach(({ first_name, last_name, role_id, manager_id }, i) => {
@@ -74,9 +82,54 @@ const viewAllEmployees = () => {
     });
 };
 
+// viewEmpsByMgr function
+const viewEmpsByMgr = () => {
+    connection.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employees', (err, res) => {
+        inquirer
+            .prompt([
+                {
+                    name: 'manager',
+                    type: 'list',
+                    message: `Whose supervisees would you like to view?`,
+                    choices: res,
+                },
+            ])
+            .then((answer) => {
+                // Manager info
+                const mgrIndex = res.filter((mgr) => {
+                    return mgr.name === answer.manager;
+                });
+
+                const mgrChoice = mgrIndex[0].id;
+
+                const query = 'SELECT * FROM employees WHERE ?';
+
+                const condit =[{ manager_id: mgrChoice }];
+
+                connection.query(query, condit, (err, res) => {
+                    if(res.length) {
+                        console.log(`${res.length} employees found!`);
+                        res.forEach(({ first_name, last_name, role_id }, i) => {
+                        const num = i + 1;
+                        console.log(
+                            `${num} || ${first_name} ${last_name} || Role ID: ${role_id}`
+                        );
+                        });
+                        start(); 
+                    }
+                    else {
+                        console.log(`This employee has no supervisees.`);
+                        start();
+                    };
+                    
+                });
+            });
+    });
+};
+
 // viewAllDepartments function
 const viewAllDepartments = () => {
-    let query = 'SELECT * FROM departments';
+    const query = 'SELECT * FROM departments';
     connection.query(query, (err, res) => {
         console.log(`${res.length} matches found!`);
         res.forEach(({ name }, i) => {
@@ -91,7 +144,7 @@ const viewAllDepartments = () => {
 
 // viewAllRoles function
 const viewAllRoles = () => {
-    let query = 'SELECT * FROM roles';
+    const query = 'SELECT * FROM roles';
     connection.query(query, (err, res) => {
         console.log(`${res.length} roles found!`);
         res.forEach(({ title, salary, department_id }, i) => {
@@ -107,7 +160,6 @@ const viewAllRoles = () => {
 // addRole function
 const addRole = () => {
     connection.query('SELECT * FROM departments', (err, res) => {
-        console.log(res);
         inquirer
             .prompt([
                 {
@@ -116,7 +168,6 @@ const addRole = () => {
                     message: `What is the name of the role?`,
                 },
                 
-                // Add validation for number input
                 {
                     name: 'salary',
                     type: 'input',
@@ -231,7 +282,7 @@ const addDepartment = () => {
 
 // updateEmployeeRole function
 const updateEmployeeRole = () => {
-    connection.query('SELECT id, first_name AS name FROM employees', (err, emps) => {
+    connection.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employees', (err, emps) => {
         connection.query('SELECT id, title AS name FROM roles', (err, roles) => {    
             inquirer
                 .prompt([
@@ -255,7 +306,7 @@ const updateEmployeeRole = () => {
                         return emp.name === answer.employee;
                     });
     
-                    const empChoice = empIndex[0].name;
+                    const empChoice = empIndex[0].id;
                     
                     // Roles info
                     const rolesIndex = roles.filter((role) => {
@@ -270,7 +321,7 @@ const updateEmployeeRole = () => {
                             role_id: roleChoice,
                         },
                         {
-                            first_name: empChoice,
+                            id: empChoice,
                         }
                     ], (err, res) => {
                         if (err) throw err;
@@ -278,7 +329,61 @@ const updateEmployeeRole = () => {
                         start();
                     });
                 });
+        });
+    });
+};
+
+// updateEmployeeMgr function
+const updateEmployeeMgr = () => {
+    connection.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employees', (err, emps) => {
+        connection.query('SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employees', (err, mgrs) => {    
+            inquirer
+                .prompt([
+                    {
+                        name: 'employee',
+                        type: 'list',
+                        message: `Which employee's manager would you like to update?`,
+                        choices: emps,
+                    },
+
+                    {
+                        name: 'manager',
+                        type: 'list',
+                        message: `To whom does this employee now report?`,
+                        choices: mgrs,
+                    },
+                ])
+                .then((answer) => {
+                    // Employee info
+                    const empIndex = emps.filter((emp) => {
+                        return emp.name === answer.employee;
+                    });
+    
+                    const empChoice = empIndex[0].id;
+                    
+                    // Managers info
+                    const mgrIndex = mgrs.filter((mgr) => {
+                        return mgr.name === answer.manager;
+                    });
+    
+                    const mgrChoice = mgrIndex[0].id;
+    
+                    connection.query('UPDATE employees SET ? WHERE ?',
+                    [
+                        {
+                            manager_id: mgrChoice,
+                        },
+                        {
+                            id: empChoice,
+                        }
+                    ], (err, res) => {
+                        if (err) throw err;
+                        console.log(`${answer.employee}'s manager has been updated!`);
+                        start();
+                    });
+                });
     })})};
+
 
 connection.connect((err) => {
     if (err) throw err;
